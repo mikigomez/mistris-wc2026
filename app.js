@@ -37,7 +37,8 @@ function isMatchLocked(match) {
 }
 
 // ── SCORER RULES ───────────────────────────────────────────────
-const MAX_FWD = 2;
+const MAX_PER_TEAM = 2;
+const MAX_TOTAL = 4;
 function scorerPts(pos) { return POS_PTS[pos] || 5; }
 
 // ── PIN HASH ───────────────────────────────────────────────────
@@ -515,7 +516,7 @@ function openPredModal(matchId) {
 function buildScorerUI(match) {
   const wrap = document.getElementById('scorerPickerWrap');
   const home = SQUADS[match.home]||[], away = SQUADS[match.away]||[];
-  let html = '<p class="scorer-ui-hint">Tap to select scorers. Max 2 strikers total. Midfielders 10 pts · Defenders/GK 15 pts.</p>';
+  let html = '<p class="scorer-ui-hint">Select up to 2 players per team (4 total). Strikers 5 pts · Midfielders 10 pts · Defenders/GK 15 pts.</p>';
   ['FWD','MID','DEF','GK'].forEach(pos => {
     [[match.home,home],[match.away,away]].forEach(([team,squad]) => {
       const players = squad.filter(p => p.pos === pos);
@@ -524,7 +525,7 @@ function buildScorerUI(match) {
         <div class="scorer-group-title">${FLAGS[team]||''} ${team} — ${POS_LABEL[pos]} (${POS_PTS[pos]} pts)</div>
         <div class="scorer-chips">${players.map(p => {
           const sel = tempScorers.find(s => normalise(s.name) === normalise(p.name));
-          return `<button class="scorer-chip ${sel?'selected':''}" data-name="${esc(p.name)}" data-pos="${p.pos}" onclick="toggleScorer(this)">${esc(p.name)}</button>`;
+          return `<button class="scorer-chip ${sel?'selected':''}" data-name="${esc(p.name)}" data-pos="${p.pos}" data-team="${esc(team)}" onclick="toggleScorer(this)">${esc(p.name)}</button>`;
         }).join('')}</div>
       </div>`;
     });
@@ -534,12 +535,13 @@ function buildScorerUI(match) {
 }
 
 function toggleScorer(btn) {
-  const name = btn.dataset.name, pos = btn.dataset.pos;
+  const name = btn.dataset.name, pos = btn.dataset.pos, team = btn.dataset.team;
   const idx = tempScorers.findIndex(s => normalise(s.name) === normalise(name));
   if (idx >= 0) { tempScorers.splice(idx,1); btn.classList.remove('selected'); }
   else {
-    if (pos === 'FWD' && tempScorers.filter(s=>s.pos==='FWD').length >= MAX_FWD) { showToast(`Max ${MAX_FWD} strikers allowed!`); return; }
-    tempScorers.push({name, pos}); btn.classList.add('selected');
+    if (tempScorers.length >= MAX_TOTAL) { showToast('Max 4 scorers per match!'); return; }
+    if (tempScorers.filter(s=>s.team===team).length >= MAX_PER_TEAM) { showToast('Max 2 scorers per team!'); return; }
+    tempScorers.push({name, pos, team}); btn.classList.add('selected');
   }
   updateScorerCount();
 }
@@ -547,8 +549,8 @@ function toggleScorer(btn) {
 function updateScorerCount() {
   const el = document.getElementById('scorerCount');
   if (!el) return;
-  const total = tempScorers.length, fwd = tempScorers.filter(s=>s.pos==='FWD').length;
-  el.textContent = total === 0 ? 'No scorers selected' : `${total} scorer${total!==1?'s':''} selected (${fwd}/${MAX_FWD} strikers)`;
+  const total = tempScorers.length;
+  el.textContent = total === 0 ? 'No scorers selected' : `${total}/4 scorers selected (max 2 per team)`;
 }
 
 function closePredModal() { document.getElementById('predOverlay').classList.remove('open'); activeMatchId = null; }
@@ -565,7 +567,7 @@ async function savePrediction() {
 
   // Double-check lock on save
   if (isMatchLocked(match)) { showToast('Predictions are locked!'); closePredModal(); return; }
-  if (tempScorers.filter(s=>s.pos==='FWD').length > MAX_FWD) { showToast('Too many strikers!'); return; }
+  if (tempScorers.length > MAX_TOTAL) { showToast('Too many scorers!'); return; }
 
   const btn = document.querySelector('#predOverlay .save-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
