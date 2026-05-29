@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mistris World Cup 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-glow"></div>
+  <span class="trophy">⚽</span>
+  <h1 class="site-title"><em>Mistris</em> World Cup <em>2026</em></h1>
+  <p class="site-sub">USA · Canada · Mexico &nbsp;|&nbsp; 11 Jun – 19 Jul</p>
+</header>
+
+<div class="site-body">
+  <aside class="sidebar">
+    <div class="sidebar-card">
+      <div class="sidebar-label">Players</div>
+      <div class="player-chips" id="playerChips"><p class="no-players-hint">No players yet</p></div>
+      <button class="join-btn" onclick="showJoinModal()">+ Create your profile</button>
+    </div>
+    <div class="sidebar-card">
+      <div class="sidebar-label">Quick scoring</div>
+      <div class="rule-row"><span class="rule-icon">🏆</span><span class="rule-pts">10</span><span class="rule-desc">Exact score</span></div>
+      <div class="rule-row"><span class="rule-icon">✅</span><span class="rule-pts">5</span><span class="rule-desc">Correct winner / draw</span></div>
+      <div class="rule-row"><span class="rule-icon">⚽</span><span class="rule-pts">5</span><span class="rule-desc">Striker scores</span></div>
+      <div class="rule-row"><span class="rule-icon">⚽</span><span class="rule-pts">10</span><span class="rule-desc">Midfielder scores</span></div>
+      <div class="rule-row"><span class="rule-icon">⚽</span><span class="rule-pts">15</span><span class="rule-desc">Defender / GK scores</span></div>
+      <p class="rule-note">Max 2 strikers · predictions lock at kickoff</p>
+    </div>
+    <div class="leaderboard">
+      <div class="lb-header">Leaderboard</div>
+      <div id="lbContent"><div class="lb-empty">Add players to start</div></div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <!-- TAB NAV -->
+    <nav class="main-tabs">
+      <button class="main-tab active" onclick="switchTab('matches',this)">Matches</button>
+      <button class="main-tab" onclick="switchTab('howtoplay',this)">How to play</button>
+    </nav>
+
+    <!-- MATCHES TAB -->
+    <div id="tab-matches">
+      <div class="phase-scroll" id="phaseScroll"></div>
+      <div id="matchList"></div>
+    </div>
+
+    <!-- HOW TO PLAY TAB -->
+    <div id="tab-howtoplay" style="display:none">
+      <div class="how-to-play">
+
+        <div class="htp-section">
+          <div class="htp-section-title"><span>📋</span> How it works</div>
+          <div class="htp-card">
+            <ul class="step-list">
+              <li><p><strong>Create your profile</strong> — pick a name and a 4-digit PIN. Your PIN is yours only. Nobody else can edit your predictions.</p></li>
+              <li><p><strong>Predict each match</strong> — before it kicks off, pick the score and your goalscorers. Once the match starts, predictions are locked forever.</p></li>
+              <li><p><strong>Watch the points roll in</strong> — results update automatically. The leaderboard updates in real time. No admin needed.</p></li>
+              <li><p><strong>Win the tournament</strong> — whoever has the most points after the final on 19 July wins.</p></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="htp-section">
+          <div class="htp-section-title"><span>🏆</span> Points system</div>
+          <div class="pts-grid">
+            <div class="pts-tile"><span class="pts-icon">🏆</span><div class="pts-num">10</div><div class="pts-desc">Exact correct score</div></div>
+            <div class="pts-tile"><span class="pts-icon">✅</span><div class="pts-num">5</div><div class="pts-desc">Correct winner or draw</div></div>
+            <div class="pts-tile"><span class="pts-icon">🤝</span><div class="pts-num">0</div><div class="pts-desc">Wrong result entirely</div></div>
+            <div class="pts-tile"><span class="pts-icon">❌</span><div class="pts-num">0</div><div class="pts-desc">No prediction placed</div></div>
+          </div>
+          <div class="tip-card"><p><strong>Note:</strong> The 10-point exact score already includes the 5-point result bonus — you don't get both. Maximum from score alone: 10 pts.</p></div>
+        </div>
+
+        <div class="htp-section">
+          <div class="htp-section-title"><span>⚽</span> Goalscorer points</div>
+          <div class="htp-card">
+            <table class="scorer-pts-table">
+              <thead><tr><th>Position</th><th>Points if they score</th><th>Why</th></tr></thead>
+              <tbody>
+                <tr><td>⚽ Striker</td><td class="pts-cell">5 pts</td><td>Most likely to score — lower reward</td></tr>
+                <tr><td>🎯 Midfielder</td><td class="pts-cell">10 pts</td><td>Less likely — higher reward</td></tr>
+                <tr><td>🛡️ Defender</td><td class="pts-cell">15 pts</td><td>Rare — big reward</td></tr>
+                <tr><td>🧤 Goalkeeper</td><td class="pts-cell">15 pts</td><td>Extremely rare — biggest reward</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="htp-section">
+          <div class="htp-section-title"><span>📏</span> Prediction rules</div>
+          <div class="htp-card" style="margin-bottom:10px">
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+              <div class="rule-chip"><span class="chip-icon">1️⃣</span><p><strong>One score per match.</strong> You pick one exact scoreline, which also determines your winner/draw pick.</p></div>
+              <div class="rule-chip"><span class="chip-icon">⚽</span><p><strong>Max 2 strikers total</strong> across both teams per match. Midfielders, defenders and keepers are unlimited.</p></div>
+              <div class="rule-chip"><span class="chip-icon">🔒</span><p><strong>Predictions lock at kickoff.</strong> The moment a match starts, your picks are frozen. No edits allowed.</p></div>
+              <div class="rule-chip"><span class="chip-icon">👁️</span><p><strong>Other people's picks are hidden</strong> until the match kicks off. You can't copy anyone before placing your prediction.</p></div>
+            </div>
+          </div>
+          <div class="tip-card">
+            <p><strong>Tip:</strong> Picking Messi (striker, 5 pts) is safe but everyone will pick him. Picking a midfielder like Bellingham (10 pts) or a defending header specialist (15 pts) could be the move that wins you the whole thing.</p>
+          </div>
+        </div>
+
+        <div class="htp-section">
+          <div class="htp-section-title"><span>⚠️</span> Fair play & anti-cheat</div>
+          <div class="warning-card">
+            <p><strong>Predictions are locked at kickoff.</strong> The site checks the match start time and blocks any prediction once the match has begun. There is no way around this.</p>
+          </div>
+          <div class="warning-card">
+            <p><strong>Other players' picks are hidden before kickoff.</strong> You cannot see what your friends predicted until the match starts — so copying is impossible.</p>
+          </div>
+          <div class="warning-card">
+            <p><strong>Your profile is PIN-protected.</strong> Nobody can log in as you or change your predictions without your 4-digit PIN. Keep it to yourself.</p>
+          </div>
+          <div class="warning-card">
+            <p><strong>Name your profile immediately.</strong> Once a name is taken, nobody else can use it. If someone takes your name before you, contact the group admin to reset it.</p>
+          </div>
+        </div>
+
+        <div class="htp-section">
+          <div class="htp-section-title"><span>📅</span> Tournament format</div>
+          <div class="htp-card">
+            <p>48 teams, 12 groups of 4. Each team plays 3 group matches. The top 2 from each group plus the 8 best third-placed teams (32 total) advance to the <strong>Round of 32</strong>. From there it's straight knockout: Round of 16, Quarter-finals, Semi-finals, and the <strong>Final on 19 July at MetLife Stadium, New Jersey.</strong></p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="authOverlay">
+  <div class="modal auth-modal">
+    <button class="modal-close" onclick="closeAuthModal()">✕</button>
+    <h2 class="modal-title" id="authTitle">Create your profile</h2>
+    <div class="auth-field" id="authNameRow">
+      <label class="auth-label">Your name</label>
+      <input type="text" id="authNameInput" class="auth-input" placeholder="e.g. Carlos" maxlength="20" />
+    </div>
+    <div class="auth-field">
+      <label class="auth-label">4-digit PIN</label>
+      <input type="password" id="authPinInput" class="auth-input pin-input" placeholder="••••" maxlength="4" inputmode="numeric" />
+    </div>
+    <div class="auth-field" id="authPinConfirmRow">
+      <label class="auth-label">Confirm PIN</label>
+      <input type="password" id="authPinConfirm" class="auth-input pin-input" placeholder="••••" maxlength="4" inputmode="numeric" />
+    </div>
+    <p class="auth-error" id="authError"></p>
+    <button class="save-btn" id="authBtn" onclick="submitAuth()">Create profile</button>
+    <p class="auth-note">Your PIN protects your profile. Nobody else can change your predictions.</p>
+  </div>
+</div>
+
+<!-- PREDICTION MODAL -->
+<div class="modal-overlay" id="predOverlay">
+  <div class="modal pred-modal">
+    <button class="modal-close" onclick="closePredModal()">✕</button>
+    <div class="modal-match-header" id="modalHeader"></div>
+    <div class="modal-instr">Your prediction</div>
+    <div class="score-picker">
+      <div class="sp-team">
+        <span class="sp-label" id="spHomeLabel">Home</span>
+        <div class="sp-controls">
+          <button class="sp-btn" onclick="changeScore('home',-1)">−</button>
+          <span class="sp-val" id="spHomeVal">0</span>
+          <button class="sp-btn" onclick="changeScore('home',1)">+</button>
+        </div>
+      </div>
+      <span class="sp-dash">—</span>
+      <div class="sp-team">
+        <span class="sp-label" id="spAwayLabel">Away</span>
+        <div class="sp-controls">
+          <button class="sp-btn" onclick="changeScore('away',-1)">−</button>
+          <span class="sp-val" id="spAwayVal">0</span>
+          <button class="sp-btn" onclick="changeScore('away',1)">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="scorer-section">
+      <label class="scorer-label">⚽ Goalscorers (max 2 strikers)</label>
+      <div class="scorer-count-bar"><span id="scorerCount">No scorers selected</span></div>
+      <div id="scorerPickerWrap"></div>
+    </div>
+    <button class="save-btn" onclick="savePrediction()">Save prediction</button>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="squads.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
