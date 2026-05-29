@@ -516,21 +516,32 @@ function openPredModal(matchId) {
 function buildScorerUI(match) {
   const wrap = document.getElementById('scorerPickerWrap');
   const home = SQUADS[match.home]||[], away = SQUADS[match.away]||[];
-  let html = '<p class="scorer-ui-hint">Select up to 2 players per team (4 total). Strikers 5 pts · Midfielders 10 pts · Defenders/GK 15 pts.</p>';
-  ['FWD','MID','DEF','GK'].forEach(pos => {
-    [[match.home,home],[match.away,away]].forEach(([team,squad]) => {
+
+  // Build two-column layout: home team left, away team right
+  function teamBlock(team, squad) {
+    let rows = '';
+    ['FWD','MID','DEF','GK'].forEach(pos => {
       const players = squad.filter(p => p.pos === pos);
       if (!players.length) return;
-      html += `<div class="scorer-group">
-        <div class="scorer-group-title">${FLAGS[team]||''} ${team} — ${POS_LABEL[pos]} (${POS_PTS[pos]} pts)</div>
-        <div class="scorer-chips">${players.map(p => {
-          const sel = tempScorers.find(s => normalise(s.name) === normalise(p.name));
-          return `<button class="scorer-chip ${sel?'selected':''}" data-name="${esc(p.name)}" data-pos="${p.pos}" data-team="${esc(team)}" onclick="toggleScorer(this)">${esc(p.name)}</button>`;
-        }).join('')}</div>
-      </div>`;
+      const chips = players.map(p => {
+        const sel = tempScorers.find(s => normalise(s.name) === normalise(p.name));
+        return `<button class="scorer-chip ${sel?'selected':''}" data-name="${esc(p.name)}" data-pos="${pos}" data-team="${esc(team)}" onclick="toggleScorer(this)">${esc(p.name)}<span class="chip-pts-badge">${POS_PTS[pos]}</span></button>`;
+      }).join('');
+      rows += `<div class="sp-pos-group"><div class="sp-pos-label">${POS_LABEL[pos]}</div><div class="scorer-chips">${chips}</div></div>`;
     });
-  });
-  wrap.innerHTML = html;
+    return `<div class="sp-team-col">
+      <div class="sp-team-header">${FLAGS[team]||''} ${team}</div>
+      ${rows}
+    </div>`;
+  }
+
+  wrap.innerHTML = `
+    <p class="scorer-ui-hint">Max 2 per team · 4 total · pts shown on each player</p>
+    <div class="sp-two-col">
+      ${teamBlock(match.home, home)}
+      <div class="sp-divider"></div>
+      ${teamBlock(match.away, away)}
+    </div>`;
   updateScorerCount();
 }
 
